@@ -1,48 +1,44 @@
-use std::fs;
+use crate::harness::Harness;
 
-pub fn run() {
-    let input = read();
-    println!("Day 2");
-    println!("  Part 1: {}", part1(&input));
-    println!("  Part 2: {}", part2(&input));
-}
+pub struct Solution;
 
-fn read() -> Vec<[char; 2]> {
-    fs::read_to_string("input/day02")
-        .expect("Unable to read input")
-        .split('\n')
-        .filter_map(|s| {
-            if s.is_empty() {
-                return None;
-            }
+impl Harness for Solution {
+    type Parsed = Vec<(char, char)>;
+    type Part1Output = u32;
+    type Part2Output = u32;
 
-            let mut c = s.chars();
-            let c1 = c.next().unwrap();
-            c.next();
-            let c2 = c.next().unwrap();
-            Some([c1, c2])
-        })
-        .collect()
-}
-
-fn part1(input: &[[char; 2]]) -> u32 {
-    let mut score = 0;
-    for i in input {
-        let opponent = Play::from(i[0]);
-        let mine = Play::from(i[1]);
-        score += mine.points() + mine.compare(&opponent).points()
+    fn parse(&self, raw_input: String) -> Self::Parsed {
+        raw_input
+            .lines()
+            .map(|s| {
+                let mut c = s.chars();
+                let c1 = c.next().unwrap();
+                c.next();
+                let c2 = c.next().unwrap();
+                (c1, c2)
+            })
+            .collect()
     }
-    score
-}
 
-fn part2(input: &[[char; 2]]) -> u32 {
-    let mut score = 0;
-    for i in input {
-        let opponent = Play::from(i[0]);
-        let outcome = Outcome::from(i[1]);
-        score += outcome.foo(opponent).points() + outcome.points()
+    fn part1(&self, input: &Self::Parsed) -> Self::Part1Output {
+        let mut score = 0;
+        for i in input {
+            let opponent = Play::from(i.0);
+            let mine = Play::from(i.1);
+            score += mine.points() + mine.compare(&opponent).points()
+        }
+        score
     }
-    score
+
+    fn part2(&self, input: &Self::Parsed) -> Self::Part1Output {
+        let mut score = 0;
+        for i in input {
+            let opponent = Play::from(i.0);
+            let outcome = Outcome::from(i.1);
+            score += outcome.foo(opponent).points() + outcome.points()
+        }
+        score
+    }
 }
 
 enum Play {

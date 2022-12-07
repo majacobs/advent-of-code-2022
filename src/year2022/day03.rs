@@ -1,44 +1,40 @@
-use std::fs;
+use crate::harness::Harness;
 
-pub fn run() {
-    let input = read();
-    println!("Day 3");
-    println!("  Part 1: {}", part1(&input));
-    println!("  Part 2: {}", part2(&input));
-}
+pub struct Solution;
 
-fn read() -> Vec<(u64, u64)> {
-    fs::read_to_string("input/day03")
-        .expect("Unable to read input")
-        .split('\n')
-        .filter_map(|s| {
-            if s.is_empty() {
-                None
-            } else {
+impl Harness for Solution {
+    type Parsed = Vec<(u64, u64)>;
+    type Part1Output = u32;
+    type Part2Output = u32;
+
+    fn parse(&self, raw_input: String) -> Self::Parsed {
+        raw_input
+            .lines()
+            .map(|s| {
                 let (left, right) = s.split_at(s.len() / 2);
-                Some((parse(left), parse(right)))
-            }
-        })
-        .collect()
-}
+                (parse(left), parse(right))
+            })
+            .collect()
+    }
 
-fn part1(input: &[(u64, u64)]) -> u32 {
-    input.iter().map(|(l, r)| unshift(l & r)).sum()
-}
+    fn part1(&self, input: &Self::Parsed) -> Self::Part1Output {
+        input.iter().map(|(l, r)| unshift(l & r)).sum()
+    }
 
-fn part2(input: &[(u64, u64)]) -> u32 {
-    input
-        .chunks(3)
-        .map(|c| unshift((c[0].0 | c[0].1) & (c[1].0 | c[1].1) & (c[2].0 | c[2].1)))
-        .sum()
+    fn part2(&self, input: &Self::Parsed) -> Self::Part2Output {
+        input
+            .chunks(3)
+            .map(|c| unshift((c[0].0 | c[0].1) & (c[1].0 | c[1].1) & (c[2].0 | c[2].1)))
+            .sum()
+    }
 }
 
 fn parse(s: &str) -> u64 {
     let mut x = 0;
     for c in s.chars() {
         let shift = match c {
-            'a'..='z' => (c as u8) - ('a' as u8),
-            'A'..='Z' => (c as u8) - ('A' as u8) + 26,
+            'a'..='z' => (c as u8) - b'a',
+            'A'..='Z' => (c as u8) - b'A' + 26,
             _ => unreachable!(),
         };
         x |= 1 << shift;
