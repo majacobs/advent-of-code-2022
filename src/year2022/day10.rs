@@ -48,8 +48,7 @@ impl Harness for Solution {
 
         let mut rendered = String::new();
 
-        for cycle in 0.. {
-            let position = cycle % 40;
+        for position in (0..40).cycle() {
             if position == 0 {
                 rendered.push('\n');
             }
@@ -99,10 +98,7 @@ impl FromStr for Instruction {
                 let payload = parts.next().unwrap().parse().unwrap();
                 Ok(Self::AddX(payload))
             }
-            n => {
-                println!("\"{}\"", n);
-                Err(())
-            }
+            _ => Err(()),
         }
     }
 }
