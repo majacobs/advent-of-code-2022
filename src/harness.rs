@@ -2,7 +2,10 @@ use std::time::{Duration, Instant};
 
 pub fn run(year: u32, day: u32, solution: impl Harness) -> Duration {
     let path = format!("input/{}/day{:02}", year, day);
-    let raw = std::fs::read_to_string(path).expect("Missing input file");
+    let Ok(raw) = std::fs::read_to_string(path) else {
+        println!("Skipping {} day {}, input file missing.", year, day);
+        return Duration::default();
+    };
     let mut runtime = Duration::default();
 
     println!("Day {}", day);
