@@ -36,10 +36,12 @@ where
     println!("  Part {}: {}", part, result);
 
     let runtime = end - start;
-    if runtime.as_millis() > 0 {
+    if runtime.as_millis() > 1 {
         println!("    Runtime: {} ms", runtime.as_millis());
-    } else {
+    } else if runtime.as_micros() > 1 {
         println!("    Runtime: {} \u{00b5}s", runtime.as_micros());
+    } else {
+        println!("    Runtime: {} ns", runtime.as_nanos());
     }
 
     runtime
