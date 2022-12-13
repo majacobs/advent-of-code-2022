@@ -1,13 +1,12 @@
+use crate::common::dijkstra::{shortest_path, shortest_path_matching, Edge};
 use crate::harness::Harness;
-use std::cmp::Ordering;
-use std::collections::BinaryHeap;
 
 pub struct Solution;
 
 impl Harness for Solution {
     type Parsed = Input;
-    type Part1Output = u32;
-    type Part2Output = u32;
+    type Part1Output = usize;
+    type Part2Output = usize;
 
     fn parse(&self, raw_input: String) -> Self::Parsed {
         let mut start = Position { row: 0, col: 0 };
@@ -37,12 +36,69 @@ impl Harness for Solution {
     }
 
     fn part1(&self, input: &Self::Parsed) -> Self::Part1Output {
-        dijkstra(&input.map, input.start, input.end).unwrap()
+        let edges = make_adjacency_list(&input.map, |curr, next| next <= curr + 1);
+        let start = input.start.row * input.map[0].len() + input.start.col;
+        let end = input.end.row * input.map[0].len() + input.end.col;
+        shortest_path(&edges, start, end).unwrap()
     }
 
     fn part2(&self, input: &Self::Parsed) -> Self::Part2Output {
-        dijkstra_backwards(&input.map, input.end, b'a').unwrap()
+        let edges = make_adjacency_list(&input.map, |curr, next| next >= curr - 1);
+        let width = input.map[0].len();
+        let start = input.end.row * width + input.end.col;
+        let is_goal = |index: usize| {
+            let r = index / width;
+            let c = index % width;
+            input.map[r][c] == b'a'
+        };
+        shortest_path_matching(&edges, start, is_goal).unwrap()
     }
+}
+
+fn make_adjacency_list<F>(map: &Vec<Vec<u8>>, can_transit: F) -> Vec<Vec<Edge>>
+where
+    F: Fn(u8, u8) -> bool,
+{
+    let height = map.len();
+    let width = map[0].len();
+
+    let mut all_edges = Vec::new();
+    let make_index = |row: usize, col: usize| row * width + col;
+
+    for row in 0..height {
+        for col in 0..width {
+            let value = map[row][col];
+            let mut edges = Vec::new();
+
+            let mut add_neighbor = |nr: usize, nc: usize| {
+                let index = make_index(nr, nc);
+                let next_value = map[nr][nc];
+                if can_transit(value, next_value) {
+                    edges.push(Edge::new(index, 1));
+                }
+            };
+
+            if row > 0 {
+                add_neighbor(row - 1, col);
+            }
+
+            if col > 0 {
+                add_neighbor(row, col - 1);
+            }
+
+            if row < height - 1 {
+                add_neighbor(row + 1, col);
+            }
+
+            if col < width - 1 {
+                add_neighbor(row, col + 1);
+            }
+
+            all_edges.push(edges);
+        }
+    }
+
+    all_edges
 }
 
 pub struct Input {
@@ -51,163 +107,9 @@ pub struct Input {
     map: Vec<Vec<u8>>,
 }
 
-fn dijkstra(map: &Vec<Vec<u8>>, start: Position, end: Position) -> Option<u32> {
-    let height = map.len();
-    let width = map[0].len();
-
-    let mut distances: Vec<Vec<u32>> = (0..height)
-        .map(|_| (0..width).map(|_| u32::MAX).collect())
-        .collect();
-    distances[start.row][start.col] = 0;
-
-    let mut heap = BinaryHeap::new();
-    heap.push(State {
-        pos: start,
-        distance: 0,
-    });
-
-    while let Some(State { pos, distance }) = heap.pop() {
-        if pos == end {
-            return Some(distance);
-        }
-
-        if distance > distances[pos.row][pos.col] {
-            continue;
-        }
-
-        const DELTAS: [(isize, isize); 4] = [(-1, 0), (1, 0), (0, -1), (0, 1)];
-        for (dr, dc) in DELTAS {
-            let next_row = (pos.row as isize) + dr;
-            let next_col = (pos.col as isize) + dc;
-
-            if next_row < 0
-                || next_row >= height as isize
-                || next_col < 0
-                || next_col >= width as isize
-            {
-                continue;
-            }
-
-            let curr_cost = map[pos.row][pos.col];
-            let next_cost = map[next_row as usize][next_col as usize];
-            if next_cost > curr_cost + 1 {
-                continue;
-            }
-
-            let next = State {
-                pos: Position {
-                    row: next_row as usize,
-                    col: next_col as usize,
-                },
-                distance: distance + 1,
-            };
-            if next.distance < distances[next.pos.row][next.pos.col] {
-                distances[next.pos.row][next.pos.col] = next.distance;
-                heap.push(next);
-            }
-        }
-    }
-
-    None
-}
-
-fn dijkstra_backwards(map: &Vec<Vec<u8>>, start: Position, end: u8) -> Option<u32> {
-    let height = map.len();
-    let width = map[0].len();
-
-    let mut distances: Vec<Vec<u32>> = (0..height)
-        .map(|_| (0..width).map(|_| u32::MAX).collect())
-        .collect();
-    distances[start.row][start.col] = 0;
-
-    let mut heap = BinaryHeap::new();
-    heap.push(State {
-        pos: start,
-        distance: 0,
-    });
-
-    while let Some(State { pos, distance }) = heap.pop() {
-        if map[pos.row][pos.col] == end {
-            return Some(distance);
-        }
-
-        if distance > distances[pos.row][pos.col] {
-            continue;
-        }
-
-        const DELTAS: [(isize, isize); 4] = [(-1, 0), (1, 0), (0, -1), (0, 1)];
-        for (dr, dc) in DELTAS {
-            let next_row = (pos.row as isize) + dr;
-            let next_col = (pos.col as isize) + dc;
-
-            if next_row < 0
-                || next_row >= height as isize
-                || next_col < 0
-                || next_col >= width as isize
-            {
-                continue;
-            }
-
-            let curr_cost = map[pos.row][pos.col];
-            let next_cost = map[next_row as usize][next_col as usize];
-            if next_cost < curr_cost - 1 {
-                continue;
-            }
-
-            let next = State {
-                pos: Position {
-                    row: next_row as usize,
-                    col: next_col as usize,
-                },
-                distance: distance + 1,
-            };
-            if next.distance < distances[next.pos.row][next.pos.col] {
-                distances[next.pos.row][next.pos.col] = next.distance;
-                heap.push(next);
-            }
-        }
-    }
-
-    None
-}
-
-#[derive(Copy, Clone, Eq, PartialEq)]
-struct State {
-    pos: Position,
-    distance: u32,
-}
-
-impl Ord for State {
-    fn cmp(&self, other: &Self) -> Ordering {
-        other
-            .distance
-            .cmp(&self.distance)
-            .then_with(|| self.pos.cmp(&other.pos))
-    }
-}
-
-impl PartialOrd for State {
-    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
-        Some(self.cmp(other))
-    }
-}
-
-#[derive(Copy, Clone, Eq, PartialEq)]
 struct Position {
     row: usize,
     col: usize,
-}
-
-impl Ord for Position {
-    fn cmp(&self, other: &Self) -> Ordering {
-        (self.row, self.col).cmp(&(other.row, other.col))
-    }
-}
-
-impl PartialOrd for Position {
-    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
-        Some(self.cmp(other))
-    }
 }
 
 #[cfg(test)]

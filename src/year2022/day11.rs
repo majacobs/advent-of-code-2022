@@ -56,7 +56,7 @@ impl Harness for Solution {
         let mut all_items = input.1.clone();
         let mut inspections = vec![0; monkeys.len()];
 
-        let foo: i64 = monkeys.iter().map(|m| m.test_divisor).product();
+        let combined_divisor: i64 = monkeys.iter().map(|m| m.test_divisor).product();
 
         const ROUNDS: usize = 10_000;
         for _ in 0..ROUNDS {
@@ -65,7 +65,7 @@ impl Harness for Solution {
                 inspections[i] += items.len();
 
                 for item in items.into_iter() {
-                    let new = monkey.operation.apply(item) % foo;
+                    let new = monkey.operation.apply(item) % combined_divisor;
 
                     let target = if new % monkey.test_divisor == 0 {
                         monkey.true_target
