@@ -14,6 +14,7 @@ mod day10;
 mod day11;
 mod day12;
 mod day13;
+mod day14;
 
 pub fn run_all() {
     println!("==== 2022 ====");
@@ -31,6 +32,7 @@ pub fn run_all() {
     runtime += run(2022, 11, day11::Solution);
     runtime += run(2022, 12, day12::Solution);
     runtime += run(2022, 13, day13::Solution);
+    runtime += run(2022, 14, day14::Solution);
 
     println!();
     println!("Total runtime: {} ms", runtime.as_millis());
